@@ -1,0 +1,145 @@
+
+//Validación de agenda
+
+- La clave es un arreglo del horario díario
+
+- ej. dias_proveedor = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
+- ej. horarios_proveedor_medios = ["8:00", "8:15", "8:30", "8:45", "9:00" ...]
+- ej. horarios_proveedor_cuartos = ["8:00", "8:30", "9:00", "9:30", "10:00" ...]
+- ej. horarios_proveedor_enteros = ["8:00", "9:00", "10:00", "11:00", "12:00" ...]
+
+//Validación de ocupacion
+
+El usuario introduce el día y el horario de la cita
+
+-> $fecha_cita
+-> $fecha_dia_cita
+-> $hora_incial_cita
+-> $hora_final_cita
+
+
+//El sistema va a la base de datos y valida si el día es: 
+    1) laborable
+    2) hay espacio disponible en el trancurso del día
+    3) hay espacio disponible en el horario seleccionado
+
+
+//Se realiza la consulta a la BDD sobre la disponibilidad, esto devuelve, en JSON.
+//Este formato JSON, puede entregar la de la semana entera o simplemente la de día seleccionado
+//En la primer versión, será sólo la del día seleccionado.
+
+[
+    {
+        "id_supplier" : CLP-346,
+        "id_service" : PUAS-001,
+        "staff" : ["Juan", "Oliver", "Enrique", "Olivia"],
+        "working_days" : [mon, tue, wed, thu, fri, sat], 
+        "schedule" : ["start_time" : "09:00", "end_time" : "20:00"],      
+        "sunday" : [],
+        "monday" : [
+            { "start_time" : "13:30", "end_time" : "13:30", "lapse_time" : "30" },
+            { "start_time" : "13:30", "end_time" : "14:00", "lapse_time" : "30" }
+        ],
+        "tuesday":[],
+        "wednesday" : [],
+        "thursday":[],
+        "friday":[],
+        "saturday":[]
+    }
+]
+
+Dentro del objeto JSON viene:
+    1) dos parámetros: id_supplier, id_service
+    2) un arreglo: staff
+    3) un objeto: Dia (ej. Monday, tuesday...)
+        - horario de trabajo = work_time
+        - tiempo disponible = available_time
+
+[
+    {
+        "id_supplier" : CLP-346,
+        "id_service" : PUAS-001,
+        "staff" : ["Juan", "Oliver", "Enrique", "Olivia"],
+        "date" : "2021-07-18",
+        "monday" : {
+                "work_time" : ["start_time" : "09:00", "end_time" : "20:00"],
+                "available_time" : [
+                    {"start_time" : "12:30", "end_time" : "13:30", "lapse_time" : "60"},
+                    {"start_time" : "13:30", "end_time" : "14:00", "lapse_time" : "30"}
+                ],
+            }
+    }
+    
+]
+
+$dia_laborable[] = working_days;
+$horario_inicio = start_time;
+$duracion_cita = lapse_time;
+
+//Validación de los dias laborables
+if($dia_laborable != MON, TUS, WED, THU, FRI, SAT, SUN, MON-FRI, MON-SAT, SUN-FRI )return;
+
+//Validacion del dia laborable
+forEach(element in $dia_laborable){
+    if($fecha_dia_cita = element){
+        //Si se labora ese día
+        //Se valida el espacio disponible
+        
+        //Calculo del tiempo disponible del día, es sumar los lapse_time del dia.
+        monday.forEach(totalLapseTime);
+
+        function totalLapseTime(){
+            totalLapseTime += monday[2].value;
+            
+            if($duracion_de_cita < $totalLapseTime){
+            //Existe tiempo para atender la cita
+
+                //Validación de hora, se hace un ciclo for para validar el espacio en el día
+                for(i=0, i<$horario_maximo_atencion, i++){
+                    if($horario_incio != null){
+                        
+                    }
+                }
+            }
+            else{
+                //No se labora ese día
+            }
+        }
+    }
+}
+
+
+if($fecha_dia_cita != $dia_laborable){
+
+}
+
+
+//Validación de disponibilidad
+//Podríamos pensar en una función que reciba argumentos y valide si se cumple o no y regrese algo
+
+function validateWorkingDay(client_day, ){
+}
+
+
+Fase cero: Selects anidados
+1) Crear una primera BDD de proveedor y servicios //DONE
+2) Se hará el html para seleccionar los dos select anidados //
+3) Se cargarán los elementos de acuerdo a la seleccion de cada uno
+
+Fase uno: 
+0) Al seleccionar el proveedor 
+    - Los servicios del proveedor
+1) Se selecciona el servicio 
+    - Se cargará los días hábiles [{L-V} ó {L,M,V} ó {V,S,D}]
+2) Se selecciona el día
+    - Se cargará la disponibilidad de horario
+    - Se cargará el staff de ese día dependiendo el servicio seleccionado
+3) Al clickear Reservar
+    - Se mostrará una pantalla con el resumen de los datos previamente seleccionados
+    - En caso de estar de acuerdo se hará la reservación
+    - En caso contrario regresar a la pantalla anterior, para modificar los parámetros.
+
+Fase dos: Se adiciona a la agenda el horario seleccionado
+1) Se crea la BDD de reservaciones
+2) Se agrega la hora seleccionada a la BDD
+

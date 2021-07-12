@@ -1,0 +1,22 @@
+{
+  "schedule":{
+    "uid":"UID9",
+    "start_date":"2016-01-31",
+    "end_date":null,
+    "timezone":"US/Arizona",
+    "schedulable_type":"practice_user",
+    "schedulable_id":"UID12345",
+    "sunday":[],
+    "monday":[
+      {"location_id":"LOC123","start_time":"05:00","end_time":"07:00"},
+      {"location_id":"LOC234","start_time":"08:00","end_time":"18:00"}
+    ],
+    "tuesday":[],
+    "wednesday":[
+      {"location_id":"LOC123","start_time":"08:00","end_time":"18:00"}
+    ],
+    "thursday":[],
+    "friday":[],
+    "saturday":[]
+  }
+}
