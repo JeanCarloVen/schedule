@@ -115,10 +115,38 @@ if($fecha_dia_cita != $dia_laborable){
 
 
 //Validación de disponibilidad
-//Podríamos pensar en una función que reciba argumentos y valide si se cumple o no y regrese algo
+//ValidateDay(working_day, daySelected)
+Primero se tiene que el workingDay esta guardado en la SessiónStore
+y al seleccionar el dia se pasa a la función.
 
-function validateWorkingDay(client_day, ){
+Construcción de la función
+
+function ValidateDay(workindDay, daySelected){
+    //Comparamos el día seleccionado con el WorkingDay
+    daySelected:
+        - 0,1,2,3,4,5,6
+    workingDay:
+        - L,M,M,J,V,S,M,L-V,M-S,V-D
+
+    wd = { "L" : 0,
+           "M" : 1,
+           "M" : 2,
+           "J" : 3,
+           "V" : 4,
+           "L-V" : 0-4
+        }
+        
+        wd.Monday
+
+ 
+    Si el día Seleccionado se encuentra dentro de los días de trabajo se procederá a continuar con el proceso, 
+    de lo contrario se sale y devuelve alerta de error
+
+    
+
+
 }
+
 
 
 Fase cero: Selects anidados
@@ -130,16 +158,163 @@ Fase uno:
 0) Al seleccionar el proveedor 
     - Los servicios del proveedor
 1) Se selecciona el servicio 
-    - Se cargará los días hábiles [{L-V} ó {L,M,V} ó {V,S,D}]
+    - Se cargará los| días hábiles [{L-V} ó {L,M,V} ó {V,S,D}]
 2) Se selecciona el día
     - Se cargará la disponibilidad de horario
-    - Se cargará el staff de ese día dependiendo el servicio seleccionado
+        Para cargar la disponibilidad de horario
+            - Estado Default:
+                * Se cargará disponibilida general
+            - Estado Seleccion:
+                * Se cargará el staff de ese día dependiendo el servicio seleccionado
 3) Al clickear Reservar
     - Se mostrará una pantalla con el resumen de los datos previamente seleccionados
     - En caso de estar de acuerdo se hará la reservación
     - En caso contrario regresar a la pantalla anterior, para modificar los parámetros.
 
-Fase dos: Se adiciona a la agenda el horario seleccionado
-1) Se crea la BDD de reservaciones
-2) Se agrega la hora seleccionada a la BDD
+Fase dos: 
+0) Al
 
+ELIMINAR ELEMENTOS DENTRO DE ARREGLOS MULTIDIMENSIONALES
+https://phpsensei.es/eliminar-elementos-duplicados-en-un-array-php/
+
+        
+//        //Recorre el arreglo de arreglos y devuelve la disponibilidad por cada Miembro del Staff
+//        foreach ($arr[0] as $data){
+//            //var_dump($data); //Devuelve los arreglos dentro del arreglo central
+//            
+//            $datedBooked = $data['dateBooked']; //Día de la cita
+//            $start_wd = $data['Start_Wd'];
+//            $end_wd = $data['End_Wd'];
+//            $dateBookedStart = $data['DateBooked_Start'];
+//            $dateBookedEnd = $data['DateBooked_End'];
+//            
+//            $typeTime = 'isQuarterHour';
+//            
+//            //Arreglo de tiempo libre por Staff
+//            $staff[] =  array( 
+//                    "id_staff" => $data['id_staff'],
+//                    "Name" => $data['staff_name'],
+//                    "Start_wd" => $data['Start_Wd'],
+//                    "End_wd" => $data['End_Wd'],
+//                    "DateBookedStart" => $data['DateBooked_Start'],
+//                    "DateBookedEnd" => $data['DateBooked_End'],
+//                    //"Available_Time" => availability($typeTime, $start_wd, $end_wd, $dateBookedStart, $dateBookedEnd)  
+//            );
+//            
+//        }
+
+                //Generación del nuevo registro (union de los arreglos)
+//                $tmp['dateBooked'] = $dataCopy[$index]['dateBooked'];
+//                $tmp['working_day'] = $dataCopy[$index]['working_day'];
+//                $tmp['lapse_time'] = $dataCopy[$index]['lapse_time'];
+//                $tmp['id'] = $dataCopy[$index]['id'];
+//                $tmp['code_supplier'] = $dataCopy[$index]['code_supplier'];
+//                $tmp['supplier_name'] = $dataCopy[$index]['supplier_name'];
+//                $tmp['id_staff'] = $dataCopy[$index]['id_staff'];
+//                $tmp['staff_name'] = $dataCopy[$index]['staff_name'];
+//                $tmp['id_supplier'] = $dataCopy[$index]['id_supplier'];
+//                $tmp['id_working_days'] = $dataCopy[$index]['id_working_days'];
+//                $tmp['Start_Wd'] = $dataCopy[$index]['Start_Wd'];
+//                $tmp['End_Wd'] = $dataCopy[$index]['End_Wd'];
+
+        
+        $array = [];
+        $index = 1;
+        foreach($arr[0] as $matrix){
+            $array['id_staff_'.$index] =  $matrix['id_staff'];
+            $array['DateBooked_Start'.$index] = $matrix['DateBooked_Start'];
+            $array['DateBooked_End'.$index] = $matrix['DateBooked_End'];
+            $array['Start_Wd'.$index] = $matrix['Start_Wd'];
+            $array['End_Wd'.$index] = $matrix['End_Wd'];
+            $index++;
+        };
+        
+        var_dump($array);
+        
+
+Function prepareUniquesSchedules($arr){
+    //Preparamos los arreglos de cada miembro del Staff
+    $index = 0;
+    $staff_data = array();
+    $dataFix = array();
+    $tmp = array();
+    $dataCopy = array();
+    $schedule_staff_repeat['schedule_staff'] = null;
+    //var_dump($arr);
+    foreach($arr[0] as $data){
+        //Copia de la Respuesta(Arreglos) que vienen de SQL
+        //Al ir recorriendo $arr[0] se crea una copía de cada uno de los registros del Staff
+        $dataCopy[] = $data;
+        
+        echo "index {$index}";
+        var_dump($dataCopy);
+        
+        
+        //Se crea un arreglo de ID's por cada arreglo que se va reccoriendo, ie. [1,2,3,3,3,4,5]
+        $id_Staff[] = $dataCopy[$index]['id_staff'];
+        
+        var_dump($id_Staff);
+        
+        //Validación de registros Unicos o Repetidos de Horario
+        if(count($id_Staff) !== 1){
+            //Validación de repetición del Staff
+            if($id_Staff[$index] !== $id_Staff[$index-1]){
+                //Cuando es un sólo registro no hace nada y deja la matríz intacta
+                echo 'Son Únicos';
+                echo "index Unico: {$index}";
+                
+                //Si existe el arreglo 'schedule_staff' se agrega aquí horarios, sino se crea el arreglo
+                
+                //Guarda el horario del arreglo "Anterior(index-1)"  DateBooked_Start y End dentro de un arreglo distinto
+                $tmp_unique[] = $dataCopy[$index-1]['DateBooked_Start'];
+                $tmp_unique[] = $dataCopy[$index-1]['DateBooked_End'];
+                var_dump($tmp_unique);
+                
+                //Elimina elementos repetidos del arreglo temporal
+                $tmp_unique = array_keys(array_flip($tmp_unique));
+                
+                //Introducimos el arreglo temporal dentro de un arreglo con llave 'schedule_staff'
+                $schedule_staff_unique['schedule_staff'] = $tmp_unique;
+                
+                //Inserta el arreglo del horario del staff dentro del dataCopy
+                $dataCopy[$index] = array_merge($dataCopy[$index-1], $schedule_staff_unique);
+                
+                //Quitar los elementos 'DateBooked_Start' y 'DateBooked_End'
+                //unset($dataCopy[$index]['DateBooked_Start'], $dataCopy[$index]['DateBooked_End']);
+                
+                var_dump($dataCopy);
+                
+            }else{
+                //Cuando se encuentran varios registros se juntan en una sola matriz de horarios
+                echo 'Hay repetición ';
+                echo "index repetición: {$index}";
+                //Guarda el horario del arreglo "Anterior(index-1)" y el "Actual(index)"  DateBooked_Start y End dentro de un arreglo temporal                
+                $tmp_repeat[] = $dataCopy[$index-1]['DateBooked_Start'];
+                $tmp_repeat[] = $dataCopy[$index-1]['DateBooked_End'];
+                $tmp_repeat[] = $dataCopy[$index]['DateBooked_Start'];
+                $tmp_repeat[] = $dataCopy[$index]['DateBooked_End']; 
+                               
+                //Elimina elementos repetidos del arreglo temporal
+                $tmp_repeat = array_keys(array_flip($tmp_repeat));
+                
+
+                //Introducimos el arreglo temporal dentro de un arreglo con llave 'schedule_staff'
+                $schedule_staff_repeat['schedule_staff'] = $tmp_repeat;
+
+                //Inserta el arreglo del horario del staff dentro del dataCopy en el arreglo actual
+                $dataCopy[$index] = array_merge($dataCopy[$index], $schedule_staff_repeat);
+
+                //Elimina el arreglo anterior, para evitar repeticiones
+                unset($dataCopy[$index-1]);
+                
+                var_dump($dataCopy);
+            }
+
+        }
+        $index++;
+    }; //End Foreach
+    
+    //regresa el Arreglo con horario único
+    return $dataCopy;
+
+};

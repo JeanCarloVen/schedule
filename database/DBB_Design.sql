@@ -292,7 +292,7 @@ VALUES(NULL, 04, 01, 05, "THURSDAY", "TIF092352", "INA", NOW(), date_add(curdate
 INSERT INTO booking
 VALUES(NULL, 05, 02, 02, "FRIDAY", "TIF092353", "ACT", NOW(), date_add(curdate(),interval 15 day), "18:00:10", "19:00:00");
 INSERT INTO booking
-VALUES(NULL, 06, 03, 04, "FRIDAY", "TIF092354", "INA", NOW(), date_add(curdate(),interval 28 day), "19:30:10", "21:30:00");
+VALUES(NULL, 01, 01, 04, "WEDNESDAY", "TIF092354", "INA", NOW(), "2021-07-07", "12:30:00", "13:00:00");
 
 -- WORKING_DAY TEST
 
@@ -346,9 +346,6 @@ INSERT INTO working_days_schedule_supplier
 VALUES (NULL, 02, 28, "09:00", "18:00");
 INSERT INTO working_days_schedule_supplier
 VALUES (NULL, 03, 29, "08:00", "17:00");
-
-
-
 
 -- Necesito id_suppler, id_service, staf[], day(monday), work_time[star, end], avalible_time[]
 -- Obtenemos los días y horarios del proveedor
@@ -434,8 +431,7 @@ INNER JOIN service AS s ON ss.id_service = s.id
 INNER JOIN staff AS st ON ss.id_staff = st.id
 WHERE b.dateBooked = "2021-07-05" AND b.status = 'ACT';
 
-SELECT b.dateBooked, b.working_day, b.dateBooked_start, b.dateBooked_end, s.lapse_time, 
-        st.id, st.staff_name, s.id, wd.id_working_days, wd.start_wd, wd.end_wd, s.service_name 
+SELECT *
 FROM service_staff AS ss
 INNER JOIN booking AS b ON b.id_service_staff = ss.id
 INNER JOIN service AS s ON ss.id_service = s.id
@@ -444,8 +440,54 @@ INNER JOIN working_days_schedule_staff AS wd ON wd.id_staff = st.id
 WHERE b.dateBooked = "2021-07-05" AND b.status = 'ACT'
 GROUP BY wd.id_working_days;
 
+SELECT b.dateBooked, b.working_day, b.dateBooked_start, b.dateBooked_end, s.lapse_time, 
+        sup.id, sup.code_supplier, sup.supplier_name, st.id, st.staff_name, s.id, s.id_supplier, s.service_name, wd.id_working_days, wd.start_wd, wd.end_wd
+FROM service_staff AS ss
+INNER JOIN booking AS b ON b.id_service_staff = ss.id
+INNER JOIN service AS s ON s.id = ss.id_service
+INNER JOIN supplier AS sup ON sup.id = s.id_supplier
+INNER JOIN staff AS st ON st.id = ss.id_staff 
+INNER JOIN working_days_schedule_staff AS wd ON wd.id_staff = st.id
+WHERE b.dateBooked = "2021-07-05" AND b.status = 'ACT'
+GROUP BY wd.id_working_days;
 
 
+
+//Proveedor, Servicio, Día
+SELECT b.dateBooked, b.working_day, b.dateBooked_start, b.dateBooked_end, s.lapse_time, 
+        sup.id, sup.code_supplier, sup.supplier_name, st.id, st.staff_name, s.id, s.id_supplier, s.service_name, wd.id_working_days, wd.start_wd, wd.end_wd
+FROM service_staff AS ss
+INNER JOIN booking AS b ON b.id_service_staff = ss.id
+INNER JOIN service AS s ON s.id = ss.id_service
+INNER JOIN supplier AS sup ON sup.id = s.id_supplier
+INNER JOIN staff AS st ON st.id = ss.id_staff 
+INNER JOIN working_days_schedule_staff AS wd ON wd.id_staff = st.id
+WHERE b.dateBooked = "2021-7-8" AND b.status ='ACT' AND sup.id =3 AND s.id =2
+GROUP BY wd.id_working_days;
+
+SELECT b.dateBooked, b.working_day, b.dateBooked_start, b.dateBooked_end, s.lapse_time, 
+        sup.id, sup.code_supplier, sup.supplier_name, st.id, st.staff_name, s.id, s.id_supplier, s.service_name, wd.id_working_days, wd.start_wd, wd.end_wd
+FROM service_staff AS ss
+INNER JOIN booking AS b ON b.id_service_staff = ss.id
+INNER JOIN service AS s ON s.id = ss.id_service
+INNER JOIN supplier AS sup ON sup.id = s.id_supplier
+INNER JOIN staff AS st ON st.id = ss.id_staff 
+INNER JOIN working_days_schedule_staff AS wd ON wd.id_staff = st.id
+WHERE b.dateBooked = "2021-07-07" AND b.status = 'ACT' AND sup.id = '3' AND s.id = '2'
+GROUP BY b.dateBooked_start
+ORDER BY st.id ASC;
+
+SELECT b.dateBooked, b.working_day, b.dateBooked_start, b.dateBooked_end, s.lapse_time, 
+        sup.id, sup.code_supplier, sup.supplier_name, st.id, st.staff_name, s.id, s.id_supplier, s.service_name, wd.id_working_days, wd.start_wd, wd.end_wd
+FROM service_staff AS ss
+INNER JOIN booking AS b ON b.id_service_staff = ss.id
+INNER JOIN service AS s ON s.id = ss.id_service
+INNER JOIN supplier AS sup ON sup.id = s.id_supplier
+INNER JOIN staff AS st ON st.id = ss.id_staff 
+INNER JOIN working_days_schedule_staff AS wd ON wd.id_staff = st.id
+WHERE b.dateBooked = "2021-07-07" AND b.status = 'ACT' AND sup.id = '3' AND s.id = '2'
+GROUP BY BY b.id, b.dateBooked_start
+ORDER BY st.id ASC, b.dateBooked_start ASC;
 
 EL PHP debe de convertir la ocupación a disponiblidad y enviar sólo los horarios disponibles
 
@@ -457,6 +499,7 @@ EL PHP debe de convertir la ocupación a disponiblidad y enviar sólo los horari
 {
     "dateBooked" : 2021-07-28,
     "working_day" : "monday",
+    "service" : "cejas",
     "available_time_general" : [
         {"dateBooked_start" : "12:30", "dateBooked_end" : "13:30", "lapse_time" : "60"},
         {"dateBooked_start" : "13:30", "dateBooked_end" : "14:00", "lapse_time" : "30"}
@@ -467,11 +510,10 @@ EL PHP debe de convertir la ocupación a disponiblidad y enviar sólo los horari
             "name" : "FERNANDA",
             "id_service" : 02,
             "Service" : CORTE CABELLO, 
-            "avalible_time" : [
-                    {"dateBooked_start" : "12:3 0", "dateBooked_end" : "13:30", "lapse_time" : "60"},
+            "available_time" : [
+                    {"dateBooked_start" : "12:30", "dateBooked_end" : "13:30", "lapse_time" : "60"},
                     {"dateBooked_start" : "13:30", "dateBooked_end" : "14:00", "lapse_time" : "30"}
-            ]
-            
+                ]           
         }
         ,
         {
@@ -481,19 +523,6 @@ EL PHP debe de convertir la ocupación a disponiblidad y enviar sólo los horari
                     {"dateBooked_start" : "12:30", "dateBooked_end" : "13:30", "lapse_time" : "60"},
                     {"dateBooked_start" : "13:30", "dateBooked_end" : "14:00", "lapse_time" : "30"}
                 ]
-            "services" :  [
-                {   
-                   "id_service" : 03,
-                   "Services" : PINTADO DE UÑAS,
-                }
-                ,
-                {   
-                   "id_service" : 05,
-                   "Services" : PINTADO DE UÑAS LARGAS
-                }
-   
-            ]
-            
         }
     ]
                 
