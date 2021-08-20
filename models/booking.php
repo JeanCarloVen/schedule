@@ -16,6 +16,7 @@ Function duplicateArray($array){
    return $array_copy;
 }
 
+//Función que elimina arreglos duplicados, dejando sólo un arreglo multidimensional
 function super_unique($array)
 {
   $result = array_map("unserialize", array_unique(array_map("serialize", $array)));
@@ -30,27 +31,47 @@ function super_unique($array)
   return $result;
 }
 
+//Función generadora de arreglos con llave del id_staff
 function joinArrays($uniqueArrays, $scheduleArrays){
-    foreach($scheduleArrays as $key => $value){
-        var_dump($key);
-        var_dump($value[0]);
+    
+    //Reindexación de los arrays, para evitar tener index con saltos
+    $sortUnique = array_values($uniqueArrays);
+    $sortSchedule = array_values($scheduleArrays);
+    
+    $sortLenghtSchedule = count($sortSchedule);
+    $sortLenghtUnique = count($sortUnique);
+    
+    if($sortLenghtSchedule !== $sortLenghtUnique) return;
+    
+    //Se modifica el arreglo para colocar el id_staff como llave de cada arreglo (valor)
+    foreach($sortSchedule as $key => $value){
+        //Sustituye la llave con el valor que se encuentra dentro del arreglo
+        $sortSchedule[$value[0]] = $sortSchedule[$key];
+                
+        //Elimina el arreglo con la llave anterior
+        unset($sortSchedule[$key]);
         
-        //Conversión a Int(entero)
-        $value[0] = intval($value[0]);
-        $newValue = $value[0];
-        var_dump($newValue);
-        
-        $key = $newValue;
-        var_dump($key);
-        
-        
-        //inversión de la clave-valor
-
+        //Elimina la llave id_staff dentro del arreglo del horario
+        unset($sortSchedule[$value[0]][0]);
     }
     
-    var_dump($scheduleArrays);
+    foreach($sortUnique as $key => $value){
+        //Sustituye la llave con el valor que se encuentra dentro del arreglo
+        $sortUnique[$value['id_staff']] = $sortUnique[$key];
+        
+        //Elimina el arreglo con la llave anterior
+        unset($sortUnique[$key]);    
+    }    
+    
+    foreach($sortUnique as $key => $value){
+        //Union de las matrices 
+        $merge[] = array_merge($sortUnique[$key], $sortSchedule[$key]);
+    }
+    
+    var_dump($merge);
 }
 
+//Funcion generadora de horarios únicos
 function getScheduleByStaff($multiArray){
     //Creación de arreglos secundarios que toma elementos de $array
     $arrayIdStaff = array_column($multiArray, 'id_staff');
@@ -85,17 +106,6 @@ function getScheduleByStaff($multiArray){
     }
     return $joinArrays;
 }
-
-Function prepareStaff(){
-     $staff[] = array(
-            $staff_data['Id_Staff'] = $data['id_staff'],
-            $staff_data['Name'] = $data['staff_name'],
-            $staff_data['Start_wd'] = $data['Start_Wd'],
-            $staff_data['End_wd'] = $data['End_Wd']
-            //"Available_Time" => availability($typeTime, $start_wd, $end_wd, $dateBookedStart, $dateBookedEnd)  
-        );
-};
-
 
 //Función generadora de horario disponible por miembro del Staff
 Function availability($typeTime, $start_wd, $end_wd, $start, $end){
@@ -166,11 +176,11 @@ if($_SERVER['REQUEST_METHOD'] == 'GET'){
         
         //Arreglo de entradas únicas
         $getUniqueArrays = super_unique($cleanArray);
-        var_dump($getUniqueArrays);
+        //var_dump($getUniqueArrays);
         
         //Obtener arreglo de schedule por cada miembro del staff
         $getSchedule = getScheduleByStaff($arr[0]);
-        var_dump($getSchedule);
+        //var_dump($getSchedule);
         
         //Join Arrays
         joinArrays($getUniqueArrays, $getSchedule);
