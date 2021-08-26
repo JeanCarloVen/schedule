@@ -6,7 +6,10 @@ const d = document,
         $scheduleEnd = d.getElementById("scheduleEnd"),
         $selectYear = d.getElementById("year"),
         $selectMonth = d.getElementById("month-picker"),
-        $selectDay = d.querySelector(".calendar-days");
+        $selectDay = d.querySelector(".calendar-days"),
+        $selectStaff = d.getElementById("select-staff"),
+        $selectAvailable = d.getElementById("select-available");
+        
 var wd = null; 
 
 function loadSupplier(){
@@ -151,7 +154,7 @@ function loadSelectedDay(e){
                 $month = $selectMonth.textContent,
                 date = generateDate($year, $month, $daySelected); //Generamos la fecha en formato DAYOFWEEK MONTH DAY YEAR 00:00:00 TIMEZONE, que se puede manipular con métodos DATE     
            
-            console.log("La fecha es: " + date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate());
+            //console.log("La fecha es: " + date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate());
             
             //Se compará si el día seleccionado se encuentra dentro del rango de los días de servicios del proveedor            
             if( isValidateDay(data[0].Day , date.getDay()) ){
@@ -160,15 +163,36 @@ function loadSelectedDay(e){
                     service = $selectService.selectedOptions[0].value ? $selectService.selectedOptions[0].value : "No hay servicio Seleccionado",
                     day = date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate();
                 
-                console.log("Proveedor seleccionado: " + supplier);
-                console.log("Servicio seleccionado: " + service);
-                console.log("Dia Seleccionado: " + day);               
-                
+                //console.log("Proveedor seleccionado: " + supplier);
+                //console.log("Servicio seleccionado: " + service);
+                //console.log("Dia Seleccionado: " + day);               
+                $selectStaff.innerHTML = "";
                 //Carga la disponibilidad del día
                 fetch(`models/booking.php?day=${day}&id_supplier=${supplier}&id_service=${service}`)
                     .then(res => res.ok ? res.json(): Promise.reject(res))
                     .then(json => {
                         console.log(json);
+                        //Carga opcion default
+                        let $staffName,
+                            $scheduleStaff;
+                        json.forEach(obj => {
+                            for(const prop in obj){
+                                if (obj.hasOwnProperty(prop)) {
+                                    if(typeof obj[prop].staff_name === 'string'){
+                                        $staffName += `<option value="${obj[prop].id_staff}">${obj[prop].staff_name}</option>`;
+                                        console.log(obj[prop][0])
+                                        $scheduleStaff += `<option value="">${obj[prop][0]}</option>`;
+                                    } 
+                                        
+                                }
+                            }
+                            //Horario por default
+                            console.log(obj[0][0]);
+                        });
+                        
+                        $selectStaff.innerHTML = $staffName;
+                        //Podría crear una función que en actualize automáticamente los horarios posibles, debe mandar un horario por default
+                        $selectAvailable.innerHTML = $scheduleStaff;
                     })
                     .catch(err => {
                         let message = err.statusText || "Ocurrio un error";
@@ -186,17 +210,27 @@ function loadSelectedDay(e){
     
 }
 
+function loadScheduleStaff(e){
+    console.log(e);
+}
+
 //Listener al Inicio, carga proveedores.
 d.addEventListener("DOMContentLoaded",loadSupplier());
 
 //Listener al cambiar el Proveedor, en consecuencia carga los servicios
 $selectSupplier.addEventListener("change", e => {
-        //Carga los servicios del proveedor seleccionado
-        loadServices(e.target.value);
-    });
+    //Carga los servicios del proveedor seleccionado
+    loadServices(e.target.value);
+});
     
 //Listener al click, Valida y carga la disponibilidad del día.
 $selectDay.addEventListener("click", e => loadSelectedDay(e));
+
+//Listener al cambiar el staff, en consecuencia carga los horarios del miembro del staff
+$selectStaff.addEventListener("change", e => {
+    //Carga los horarios del staff seleccionado
+    loadScheduleStaff(e);
+});
 
 
 

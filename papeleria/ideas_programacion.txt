@@ -318,3 +318,41 @@ Function prepareUniquesSchedules($arr){
     return $dataCopy;
 
 };
+
+//Función generadora de horario del staff
+Function availability($typeTime, $start_wd, $end_wd, $start, $end){
+    //Definición de Variables
+    $leisure[] = null;
+    $begin_wd = new DateTime($start_wd);
+    $finish_wd = new DateTime($end_wd);
+    $start_booked = new DateTime($start);
+    $end_booked = new DateTime($end);
+    //Es necesario agregarle 30 minutos porque al generar los intervalos lo elimina el último registro
+    $end_booked = $end_booked->modify('+ 30 minute');
+    
+    //Intervalo de medias para el horario
+    if($typeTime == 'isHalfTime'){
+        //Definición del intervalo para los horarios
+        $interval = DateInterval::createFromDateString('30minute');
+        // Periodo del día de trabajo
+        $period_wd = new DatePeriod($begin_wd, $interval, $finish_wd);
+        // Periodo de ocupación 
+        $period_booked = new DatePeriod($start_booked, $interval, $end_booked);
+
+        //Generación del horario del día considerando el inicio y termino del día laboral
+        foreach ($period_wd as $dt) {
+            $schedule[] = $dt->format("H:i");
+       }
+       
+       //Generación del intervalo del ocupación
+        foreach ($period_booked as $dt) {
+            $period[] = $dt->format("H:i");
+       }      
+    }
+    
+    //Del horario del miembro del staff se eliminan los periodos de ocupación    
+    $leisure = array_diff($schedule, $period);
+    
+    //Devuelve el horario disponible por miembro del Staff
+    return $leisure;
+};
