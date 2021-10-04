@@ -4,6 +4,7 @@ const d = document,
         $open = d.getElementById("open"),
         $scheduleStart = d.getElementById("scheduleStart"),
         $scheduleEnd = d.getElementById("scheduleEnd"),
+        $ltService = d.getElementById("lapse_time");
         $selectYear = d.getElementById("year"),
         $selectMonth = d.getElementById("month-picker"),
         $selectDay = d.querySelector(".calendar-days"),
@@ -11,59 +12,6 @@ const d = document,
         $selectAvailable = d.getElementById("select-available");
         
 var wd = null; 
-
-function loadSupplier(){
-    fetch("models/suppliers.php")
-        .then(res => res.ok ? res.json(): Promise.reject(res))
-        .then(json => {
-           //console.log(json);  
-            //console.log(json[0].Working_Days);  
-            //Declaración del JSON con los datos de los proveedores (Máximo 10 o 20 proveedores)
-//            sessionStorage.setItem('data', JSON.stringify(json));
-//            data = sessionStorage.getItem('data')            
-            //Carga de Opciones
-            let $options = `<option value="">Elige un proveedor</option>`;
-            json.forEach(el => $options += `<option value="${el.id_Supplier}">${el.Supplier_Name}</option>`);
-            $selectSupplier.innerHTML = $options;
-        })
-        .catch(err =>{
-            console.log(err);
-            let message = err.statusText || "Ocurrio un error";
-            $selectSupplier.nextElementSibling.innerHTML = `
-            Error ${err.status}: ${message}
-            `;
-        })                     
-}
-
-function loadServices(supplier){
-    fetch(`models/services.php?id_supplier=${supplier}`)
-            .then(res => res.ok ? res.json(): Promise.reject(res))
-            .then(json => {
-                //console.log(json);
-                //Declaración del JSON con los datos de los proveedores (Máximo 10 o 20 proveedores)
-                sessionStorage.setItem('data', JSON.stringify(json));
-                data = sessionStorage.getItem('data');
-                //console.log(JSON.parse(data));
-                data = JSON.parse(data);
-                                
-                (typeof data[0]  !== 'undefined') ? $open.textContent = data[0].Day : $open.textContent = ""; 
-                (typeof data[0]  !== 'undefined') ? $scheduleStart.textContent = data[0].Start : $scheduleStart.textContent = ""; 
-                (typeof data[0]  !== 'undefined') ? $scheduleEnd.textContent = data[0].End : $scheduleEnd.textContent = ""; 
-                
-                
-                //Carga de Opciones
-                let $options = `<option value="">Elige un servicio</option>`;
-                json.forEach(el => $options += `<option value="${el.ID_Service}">${el.Service_Name}</option>`);
-                $selectService.innerHTML = $options;
-            })
-            .catch(err =>{
-            console.log(err);
-            let message = err.statusText || "Ocurrio un error";
-            $selectService.nextElementSibling.innerHTML = `
-            Error ${err.status}: ${message}
-            `;
-        })
-}
 
 generateDate = (year, month, day) =>{
     switch (month){
@@ -144,6 +92,62 @@ function isValidateDay(workingDay, daySelected){
     return isValidate;
 }
 
+
+function loadSupplier(){
+    fetch("models/suppliers.php")
+        .then(res => res.ok ? res.json(): Promise.reject(res))
+        .then(json => {
+           //console.log(json);  
+            //console.log(json[0].Working_Days);  
+            //Declaración del JSON con los datos de los proveedores (Máximo 10 o 20 proveedores)
+//            sessionStorage.setItem('data', JSON.stringify(json));
+//            data = sessionStorage.getItem('data')            
+            //Carga de Opciones
+            let $options = `<option value="">Elige un proveedor</option>`;
+            json.forEach(el => $options += `<option value="${el.id_Supplier}">${el.Supplier_Name}</option>`);
+            $selectSupplier.innerHTML = $options;
+        })
+        .catch(err =>{
+            console.log(err);
+            let message = err.statusText || "Ocurrio un error";
+            $selectSupplier.nextElementSibling.innerHTML = `
+            Error ${err.status}: ${message}
+            `;
+        })                     
+}
+
+function loadServices(supplier){
+    fetch(`models/services.php?id_supplier=${supplier}`)
+            .then(res => res.ok ? res.json(): Promise.reject(res))
+            .then(json => {
+                //console.log(json);
+                //Declaración del JSON con los datos de los proveedores (Máximo 10 o 20 proveedores)
+                sessionStorage.setItem('data', JSON.stringify(json));
+                data = sessionStorage.getItem('data');
+                console.log(JSON.parse(data));
+                data = JSON.parse(data);
+                                
+                (typeof data[0]  !== 'undefined') ? $open.textContent = data[0].Day : $open.textContent = ""; 
+                (typeof data[0]  !== 'undefined') ? $scheduleStart.textContent = data[0].Start : $scheduleStart.textContent = ""; 
+                (typeof data[0]  !== 'undefined') ? $scheduleEnd.textContent = data[0].End : $scheduleEnd.textContent = ""; 
+                //(typeof data[0]  !== 'undefined') ? $ltService.textContent = data[0].LT_Service : $ltService.textContent = ""; 
+                
+                //Carga de Opciones
+                let $options = `<option value="">Elige un servicio</option>`;
+                json.forEach(el => $options += `<option value="${el.ID_Service}">${el.Service_Name}</option>`);
+                $selectService.innerHTML = $options;
+            })
+            .catch(err =>{
+            console.log(err);
+            let message = err.statusText || "Ocurrio un error";
+            $selectService.nextElementSibling.innerHTML = `
+            Error ${err.status}: ${message}
+            `;
+        })
+}
+
+
+
 function loadSelectedDay(e){
     //Valida si previamente se seleccionó el proveedor y el servicio
     if($selectSupplier.value !== "" && $selectService.value !== ""){
@@ -179,20 +183,28 @@ function loadSelectedDay(e){
                             for(const prop in obj){
                                 if (obj.hasOwnProperty(prop)) {
                                     if(typeof obj[prop].staff_name === 'string'){
+                                        //Carga los nombres del Staff en la lista $staffName
                                         $staffName += `<option value="${obj[prop].id_staff}">${obj[prop].staff_name}</option>`;
-                                        console.log(obj[prop][0])
-                                        $scheduleStaff += `<option value="">${obj[prop][0]}</option>`;
-                                    } 
+                                        console.log(obj[0].ScheduleArray);
+                                        console.log(obj[prop].id_staff);
+                                        console.log(obj[prop].ScheduleArray);
                                         
+                                    } 
                                 }
                             }
-                            //Horario por default
-                            console.log(obj[0][0]);
+                            //Carga los horarios del primer staff por default en la lista $scheduleStaff
+                            let scheduleArr = obj[0].ScheduleArray;
+                            scheduleArr.forEach( schedule => {
+                                $scheduleStaff += `<option value="">${schedule}</option>`;
+                            })
                         });
-                        
+                        //Manda al DOM la lista del staff;
                         $selectStaff.innerHTML = $staffName;
+                        //Manda al DOM la lista de horarios
                         //Podría crear una función que en actualize automáticamente los horarios posibles, debe mandar un horario por default
+                        console.log($staffName);
                         $selectAvailable.innerHTML = $scheduleStaff;
+                        console.log($scheduleStaff);
                     })
                     .catch(err => {
                         let message = err.statusText || "Ocurrio un error";
@@ -210,8 +222,19 @@ function loadSelectedDay(e){
     
 }
 
-function loadScheduleStaff(e){
-    console.log(e);
+function loadLapseTime(e){    
+    //La idea es que con el valor de e.target.value sea buscado dentro de las objetos del array 
+    data.find( obj =>{
+        if(obj.ID_Service === e.target.value){
+            //Se coloca el LapseTime en el DOM
+            $ltService.innerHTML = obj.LT_Service;
+        }
+    });
+}
+
+//Elimina el lapseTime del DOM, aunque la intención es agregar mas opciones si es necesario.
+function clearOptions(){
+    $ltService.innerHTML = '';
 }
 
 //Listener al Inicio, carga proveedores.
@@ -219,8 +242,15 @@ d.addEventListener("DOMContentLoaded",loadSupplier());
 
 //Listener al cambiar el Proveedor, en consecuencia carga los servicios
 $selectSupplier.addEventListener("change", e => {
+    //Restablece todas las opciones a cero
+    clearOptions();
+    
     //Carga los servicios del proveedor seleccionado
     loadServices(e.target.value);
+});
+
+$selectService.addEventListener("change", e => {
+   loadLapseTime(e);
 });
     
 //Listener al click, Valida y carga la disponibilidad del día.
@@ -231,6 +261,8 @@ $selectStaff.addEventListener("change", e => {
     //Carga los horarios del staff seleccionado
     loadScheduleStaff(e);
 });
+
+
 
 
 

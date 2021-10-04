@@ -486,7 +486,7 @@ INNER JOIN supplier AS sup ON sup.id = s.id_supplier
 INNER JOIN staff AS st ON st.id = ss.id_staff 
 INNER JOIN working_days_schedule_staff AS wd ON wd.id_staff = st.id
 WHERE b.dateBooked = "2021-07-07" AND b.status = 'ACT' AND sup.id = '3' AND s.id = '2'
-GROUP BY BY b.id, b.dateBooked_start
+GROUP BY b.id, b.dateBooked_start
 ORDER BY st.id ASC, b.dateBooked_start ASC;
 
 EL PHP debe de convertir la ocupación a disponiblidad y enviar sólo los horarios disponibles

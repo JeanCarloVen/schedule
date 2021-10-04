@@ -17,14 +17,10 @@ Function duplicateArray($array){
 }
 
 //Función que elimina arreglos duplicados, dejando sólo un arreglo multidimensional
-function super_unique($array)
-{
+function super_unique($array){
   $result = array_map("unserialize", array_unique(array_map("serialize", $array)));
-
-  foreach ($result as $key => $value)
-  {
-    if ( is_array($value) )
-    {
+  foreach ($result as $key => $value){
+    if ( is_array($value) ){
       $result[$key] = super_unique($value);
     }
   }
@@ -43,33 +39,72 @@ function reindexMultiArrayByIdStaff($multiarray){
 
 //Función generadora de arreglos con llave del id_staff
 function joinArrays($uniqueArrays, $availability){
-    
+    //Validación de las llaves, si ambos tienen las mismas llaves tendrá que devolver un array vacio
+    if(!empty(array_intersect_key($uniqueArrays, $availability)))return;
     //Availability debe de entrar a la función con el id_staff como key
+    //Tamaño de los arrays
     $sortLenghtSchedule = count($uniqueArrays);
     $sortLenghtUnique = count($availability);
-    
+    //Si el tamaño de los Array del Horario del staff es diferente al tamaño de los Array de Datos Únicos no se sale
     if($sortLenghtSchedule !== $sortLenghtUnique) return;
-
+    //Recorrido sobre los Arrays Únicos para sustituir las llaves comúnes con las llaves del valor del id_staff, ie. {0,1,2,} => {id_staff(0),id_staff(1)}
     foreach($uniqueArrays as $key => $value){
         //Sustituye la llave con el valor que se encuentra dentro del arreglo
         $uniqueArrays[$value['id_staff']] = $uniqueArrays[$key];
-        
         //Elimina el arreglo con la llave anterior
         unset($uniqueArrays[$key]);    
     }    
     
-    
-    //Se unen cuando las llaves son las mismas
+    //Se unen las llaves, es decir, {id_staff(0), id_staff(1)} = {id_staff(0), id_Staff(1)} <=> {4,5,6} = {4,5,6}, 
+    //de manera implicita se verifica el merge, dado que se dará si y solo sí el valor de $key es el mismo en ambos.
     foreach($uniqueArrays as $key => $value){
-        $jointArrays[] = array_merge($uniqueArrays[$key], $availability[$key]);
+        //Se declara un arreglo que contendrá el horario, implicitamente se deben de coincidir los keys de ambos para unirlos
+        //reindexacion a partir de cero y agrupación dentro de un array llamado 'ScheduleArray'
+        $scheduleArray['ScheduleArray'] = array_values($availability[$key]);
+        
+        //Junta los dos arrays
+        $jointArrays[] = array_merge($uniqueArrays[$key], $scheduleArray);
+        
     }
+    
     
     //Retorna la union de las matrices
     return $jointArrays;
 }
 
+//Generador de bloque del horario, toma inicio y fin del horario laboral 
+Function generateBlockSchedule($array){
+    //var_dump($array);
+    $tmp = array();
+    $interval = DateInterval::createFromDateString('15minutes');        
+    foreach($array as $key => $value){
+        //Toma cada array y genera el bloque
+        $staff_id = $value[0];
+        $begin_wd = new DateTime($value[1]);
+        
+        $finish_wd = new DateTime($value[2]);
+
+        //Es necesario agregarle 30 minutos porque al generar los intervalos lo elimina el último registro
+        //$finish_wd = $finish_wd->modify('+ 30 minute');
+        //Generación del bloque
+        //Definición del intervalo para los horarios
+        $period = new DatePeriod($begin_wd, $interval, $finish_wd); 
+        $tmp[] = $staff_id;
+        foreach ($period as $dt) {
+             $tmp[] = $dt->format("H:i");            
+        }
+        //var_dump($tmp);
+        //Elimina el
+        $array[$key] = $tmp;
+        unset($tmp);
+    }
+    //var_dump($array);
+    return $array;
+}
+
 //Funcion generadora de horarios únicos
 function getScheduleByStaff($multiArray){
+    //var_dump($multiArray);
     //Creación de arreglos secundarios que toma elementos de $array
     $arrayIdStaff = array_column($multiArray, 'id_staff');
     $arrayDbStart = array_column($multiArray, 'DateBooked_Start');
@@ -77,13 +112,18 @@ function getScheduleByStaff($multiArray){
     
     //Creación del arreglo principal que integra a a los secundarios
     $joinArrays = array_map(null, $arrayIdStaff, $arrayDbStart, $arrayDbEnd );
+    //var_dump($joinArrays);
+    //Posiblemente aquí iria la funcion constructora de bloques
+    $joinArrays = generateBlockSchedule($joinArrays);
     
     $length = count($joinArrays);
     //Mecanismo de validación de horarios.
     //Compara horario actual con el previo y en caso de ser igual los une en una sola entrada, de lo contrario lo deja intacto
     for($index=1; $index<$length; $index++){
         $array1 = $joinArrays[$index][0];
+        //var_dump($array1);
         $array2 = $joinArrays[$index-1][0];
+        //var_dump($array2);
         if($array1 == $array2 ){
             //Une el array actual con el anterior
             $merge = array_merge($joinArrays[$index], $joinArrays[$index-1]);
@@ -101,6 +141,7 @@ function getScheduleByStaff($multiArray){
             unset($joinArrays[$index-1]);
         }
     }
+    //var_dump($joinArrays);
     return $joinArrays;
 }
 
@@ -110,30 +151,27 @@ function reIndex($array){
     return $reIndex;
 }
 
-
-//Función generadora de horario del staff
+//Función generadora de horario general del staff tomando el inicio y fin del día laboral
 Function makeSchedule($typeTime, $id_staff, $start_wd, $end_wd){
     //Definición de Variables
     $begin_wd = new DateTime($start_wd);
     $finish_wd = new DateTime($end_wd);
     
     //Es necesario agregarle 30 minutos porque al generar los intervalos lo elimina el último registro
-    $finish_wd = $finish_wd->modify('+ 30 minute');
+    $finish_wd = $finish_wd->modify('+ 15 minute');
     
-    //Intervalo de medias para el horario
-    if($typeTime == 'isHalfTime'){
+    //Intervalo de medias horas para el horario
+    if($typeTime == 'isQuarter'){
         //Definición del intervalo para los horarios
-        $interval = DateInterval::createFromDateString('30minute');
+        $interval = DateInterval::createFromDateString('15minutes');
         // Periodo del día de trabajo
         $period_wd = new DatePeriod($begin_wd, $interval, $finish_wd);
-        
+        //Agrega el id del staff al horario
         $schedule[] = $id_staff;    
         //Generación del horario del día considerando el inicio y termino del día laboral
         foreach ($period_wd as $dt) {
             $schedule[] = $dt->format("H:i");
-
         }
-        
     }
     
     //Devuelve el horario disponible por miembro del Staff
@@ -152,6 +190,12 @@ function makeSchedulesArrays($multiArray, $typeTime){
     return $schedule;
 }
 
+function validitySchedule(){
+  //Al ir validando el horario debería de ir checando si hay espacio
+  //por ejemplo:
+    
+    
+};
 
 //Función que realiza la diferencia sobre los el horario laboral y lo agendado
 function availability($scheduleArray, $scheduledArray ){
@@ -196,7 +240,7 @@ if($_SERVER['REQUEST_METHOD'] == 'GET'){
         header("HTTP/1.1 200 hay datos");
         //Convertidor de ocupación a disponibilidad
         $arr[] = $sql->fetchAll();
-        
+            
         //Unique Arrays
         //Duplicación del array original y eliminación del Start y el End
         $cleanArray = duplicateArray($arr[0]);
@@ -214,11 +258,11 @@ if($_SERVER['REQUEST_METHOD'] == 'GET'){
         //Reindexación del arreglo, dado el nuevo orden los indices son [0,1,2,...] respetando el id_staff
         $reindexSchedule = reIndex($getSchedule);
         
-        //Reindexador por Id_staff el Schedule (Lo agendado)
+        //Reindexador por Id_staff el Schedule (Lo agendado) ej. {id_staff(1){9:00,9:30,10:00,10:30}, id_staff(2){8:00,8:30}}
         $reindexByStaff = reindexMultiArrayByIdStaff($reindexSchedule);
         
-        //Obtiene disponibilidad 
-        $typeTime = 'isHalfTime';
+        //Tipo de disponibilidad 
+        $typeTime = 'isQuarter';
         
         //Obtiene los horarios laborales por cada miembro del staff en un arreglo de dos dimensiones, respendanto el id_staff [0,1,2,3,...]
         $scheduleArrays = makeSchedulesArrays($reindexUniqueArrays, $typeTime);
@@ -231,8 +275,7 @@ if($_SERVER['REQUEST_METHOD'] == 'GET'){
         
         //Join Arrays: Junta los Arrays Unicos con los arrays de Disponibilidad
         $staffArrays = joinArrays($reindexUniqueArrays, $availability);
-        
-        
+        //var_dump($staffArrays);
         //Información General del Proveedor y Servicio
         $generalInfo = array(
                 "Date_Booked" => $arr[0][0]['dateBooked'],
@@ -245,12 +288,10 @@ if($_SERVER['REQUEST_METHOD'] == 'GET'){
             "General_Info" => $generalInfo
         );
         
-        
-        
         //Formación del arreglo 
         $res[] = array_merge($general, $staffArrays);
         
-        //header('Content-Type: application/json');
+        header('Content-Type: application/json');
         echo json_encode($res);
         exit;				
     } else {
