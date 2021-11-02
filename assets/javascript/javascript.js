@@ -12,6 +12,9 @@ const d = document,
         $selectAvailable = d.getElementById("select-available");
         
 var wd = null; 
+var DateTimeLuxon = luxon.DateTime, 
+        Interval = luxon.Interval;
+
 
 generateDate = (year, month, day) =>{
     switch (month){
@@ -124,7 +127,7 @@ function loadServices(supplier){
                 //Declaración del JSON con los datos de los proveedores (Máximo 10 o 20 proveedores)
                 sessionStorage.setItem('data', JSON.stringify(json));
                 data = sessionStorage.getItem('data');
-                console.log(JSON.parse(data));
+                //console.log(JSON.parse(data));
                 data = JSON.parse(data);
                                 
                 (typeof data[0]  !== 'undefined') ? $open.textContent = data[0].Day : $open.textContent = ""; 
@@ -146,6 +149,86 @@ function loadServices(supplier){
         })
 }
 
+//Lo ideal es que cada vez que cambie el servicio, se modifique la diponibilidad del miembro del Staff escogido
+function loadLapseTime(e){    
+    //La idea es que con el valor de e.target.value sea buscado dentro de las objetos del array 
+    //Validación de existencia de data
+    if(typeof data === 'undefined') return;
+    
+    //Se recorre el objeto data y cada objeto interno se valida si coincide con el valor del evento obtenido por el usuario.
+    data.find( obj =>{
+        if(obj.ID_Service === e.target.value){
+            //Se coloca el LapseTime en el DOM
+            $ltService.innerHTML = obj.LT_Service;
+            //Duración del servicio
+            LT_ServiceSelected = obj.LT_Service;  
+            //Inicio del horario laboral
+            Start_ServiceSelected = obj.Start;
+            //Fin del horario laboral
+            End_ServiceSelected = obj.End;
+            
+            //Es probable que la función de validación del horario se encuentre en este lugar
+            //validateSchedule()
+            
+        }
+    });
+}
+
+//La función devolverá, únicamente las horas disponibles
+//Recibe el incio y fin del horario de trabajo
+function validateSchedule(serviceSelected, startServiceSelected, endServiceSelected, scheduleArray){
+    //Validación de entradas
+    if(typeof serviceSelected !== 'undefined'&&
+            typeof startServiceSelected !== 'undefined' &&
+            typeof endServiceSelected !== 'undefined' && 
+            typeof scheduleArr !== 'undefined')return;
+    //Ordenamiento del horario en orden ascendente
+    var scheduleArraySort = scheduleArray.sort();
+    
+    console.log(startServiceSelected);
+    console.log(endServiceSelected);
+    
+    //Al cargar el tiempo del servicio deberá ir validando
+    //Aumentando de 15 en 15 minutos 
+    
+    let dateArr = new Array();
+    for(let i=0; i<scheduleArraySort.length ; i++){
+        //Hora agendada del Staff
+        let timeFromScheduled = scheduleArraySort[i],
+            timeArr = timeFromScheduled.split(':'), //Crea un arreglo separado por ":" de un string
+            hour = parseInt(timeArr[0]), //Toma el primer elemento (horas) del arreglo, convirtiendo el agumento cadena [timeArr] en un entero. 
+            minute = parseInt(timeArr[1]), //Toma el segundo elemento (minutos) del arreglo, convirtiendo el agumento cadena [timeArr] en un entero. 
+            dateFromPicker = date; //Toma la fecha de la variable global "date" y la guardamos en una nueva variable local
+    
+        //Fecha y hora modificada de acuerdo a lo agendado. 
+        //Se va guardando en un nuevo arreglo "dateArr"
+        dateArr.push(dateFromPicker.setHours(hour,minute));
+        
+        if(typeof dateArr[1] !== 'undefined'){
+            let afterTime = new Date(dateArr[i]), 
+                beforeTime = new Date(dateArr[i-1]);
+            
+            console.log(beforeTime);
+            console.log(afterTime);
+            i = Interval.fromDateTimes(beforeTime, afterTime);
+            console.log(i.length('minutes'));
+            
+            
+        }
+        
+    }
+    
+    now = DateTimeLuxon.now();
+    later = DateTimeLuxon.local(2021, 12, 12);
+    i = Interval.fromDateTimes(now, later);
+    
+    console.log(i.length('days'));
+    // A partir de aquí ya podría usar Luxon
+    //Construcción de los bloques agendados considerando el servicio.
+    //Cuando haya intervalos mayores a 15 minutos entre dos horarios (elementos de la matriz)
+    //Deberá entrar la validación con el tiempo de servicio
+    
+  }
 
 
 function loadSelectedDay(e){
@@ -155,14 +238,14 @@ function loadSelectedDay(e){
         if(e.target.matches(".calendar-day-hover")){
             let $daySelected = e.target.innerText ? e.target.innerText : "No hay día Seleccionado",
                 $year = $selectYear.textContent,
-                $month = $selectMonth.textContent,
+                $month = $selectMonth.textContent;
                 date = generateDate($year, $month, $daySelected); //Generamos la fecha en formato DAYOFWEEK MONTH DAY YEAR 00:00:00 TIMEZONE, que se puede manipular con métodos DATE     
            
             //console.log("La fecha es: " + date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate());
             
             //Se compará si el día seleccionado se encuentra dentro del rango de los días de servicios del proveedor            
             if( isValidateDay(data[0].Day , date.getDay()) ){
-                console.log("Día Válido");
+                //console.log("Día Válido");
                 let supplier = $selectSupplier.selectedOptions[0].value ? $selectSupplier.selectedOptions[0].value : "No hay proveedor Seleccionado",
                     service = $selectService.selectedOptions[0].value ? $selectService.selectedOptions[0].value : "No hay servicio Seleccionado",
                     day = date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate();
@@ -175,7 +258,7 @@ function loadSelectedDay(e){
                 fetch(`models/booking.php?day=${day}&id_supplier=${supplier}&id_service=${service}`)
                     .then(res => res.ok ? res.json(): Promise.reject(res))
                     .then(json => {
-                        console.log(json);
+                        //console.log(json);
                         //Carga opcion default
                         let $staffName,
                             $scheduleStaff;
@@ -185,16 +268,18 @@ function loadSelectedDay(e){
                                     if(typeof obj[prop].staff_name === 'string'){
                                         //Carga los nombres del Staff en la lista $staffName
                                         $staffName += `<option value="${obj[prop].id_staff}">${obj[prop].staff_name}</option>`;
-                                        console.log(obj[0].ScheduleArray);
-                                        console.log(obj[prop].id_staff);
-                                        console.log(obj[prop].ScheduleArray);
+                                        //console.log(obj[0].ScheduleArray);
+                                        //console.log(obj[prop].id_staff);
+                                        //console.log(obj[prop].ScheduleArray);
                                         
                                     } 
                                 }
                             }
+                            //Se genera horario por default del primer miembro del Staff
                             //Carga los horarios del primer staff por default en la lista $scheduleStaff
-                            let scheduleArr = obj[0].ScheduleArray;
-                            scheduleArr.forEach( schedule => {
+                            scheduleArrDefault = obj[0].ScheduleArray;
+                            scheduleArrDefault.forEach( schedule => {
+                                //console.log(schedule);
                                 $scheduleStaff += `<option value="">${schedule}</option>`;
                             })
                         });
@@ -202,9 +287,19 @@ function loadSelectedDay(e){
                         $selectStaff.innerHTML = $staffName;
                         //Manda al DOM la lista de horarios
                         //Podría crear una función que en actualize automáticamente los horarios posibles, debe mandar un horario por default
-                        console.log($staffName);
+                        //console.log($staffName);
+                        //Aquí deberá ir la función que valide el horario 
+                        //Tendría que tomar el valor del tiempo de servicio, podría ir a la función ya creada 
+                        // Falta validar existencia
+                        if(typeof LT_ServiceSelected !== 'undefined' && typeof Start_ServiceSelected !== 'undefined' && typeof End_ServiceSelected !== 'undefined'){
+                            //funcion que valide el horario
+                            validateSchedule(LT_ServiceSelected, Start_ServiceSelected, End_ServiceSelected, scheduleArrDefault);
+                        }
+
                         $selectAvailable.innerHTML = $scheduleStaff;
-                        console.log($scheduleStaff);
+                        //console.log($scheduleStaff);
+                        
+                        
                     })
                     .catch(err => {
                         let message = err.statusText || "Ocurrio un error";
@@ -222,15 +317,7 @@ function loadSelectedDay(e){
     
 }
 
-function loadLapseTime(e){    
-    //La idea es que con el valor de e.target.value sea buscado dentro de las objetos del array 
-    data.find( obj =>{
-        if(obj.ID_Service === e.target.value){
-            //Se coloca el LapseTime en el DOM
-            $ltService.innerHTML = obj.LT_Service;
-        }
-    });
-}
+
 
 //Elimina el lapseTime del DOM, aunque la intención es agregar mas opciones si es necesario.
 function clearOptions(){

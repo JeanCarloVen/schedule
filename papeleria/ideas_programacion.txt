@@ -356,3 +356,5 @@ Function availability($typeTime, $start_wd, $end_wd, $start, $end){
     //Devuelve el horario disponible por miembro del Staff
     return $leisure;
 };
+
+el 
