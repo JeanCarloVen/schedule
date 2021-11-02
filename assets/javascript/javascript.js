@@ -14,6 +14,7 @@ const d = document,
 var wd = null; 
 var DateTimeLuxon = luxon.DateTime, 
         Interval = luxon.Interval;
+console.log(helo);
 
 
 generateDate = (year, month, day) =>{
