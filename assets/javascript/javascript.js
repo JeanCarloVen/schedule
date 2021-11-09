@@ -13,8 +13,8 @@ const d = document,
         
 var wd = null; 
 var DateTimeLuxon = luxon.DateTime, 
-        Interval = luxon.Interval;
-console.log(helo);
+        Interval = luxon.Interval,
+        Duration = luxon.Duration;
 
 
 generateDate = (year, month, day) =>{
@@ -177,57 +177,89 @@ function loadLapseTime(e){
 
 //La función devolverá, únicamente las horas disponibles
 //Recibe el incio y fin del horario de trabajo
-function validateSchedule(serviceSelected, startServiceSelected, endServiceSelected, scheduleArray){
+function validateSchedule(serviceSelected, startServiceSelected, endServiceSelected, scheduledArray){
     //Validación de entradas
     if(typeof serviceSelected !== 'undefined'&&
             typeof startServiceSelected !== 'undefined' &&
             typeof endServiceSelected !== 'undefined' && 
             typeof scheduleArr !== 'undefined')return;
-    //Ordenamiento del horario en orden ascendente
-    var scheduleArraySort = scheduleArray.sort();
     
     console.log(startServiceSelected);
     console.log(endServiceSelected);
+    console.log(serviceSelected);
+    
+    let scheduledArraySort = scheduledArray.sort(), //Ordenamiento del horario en orden ascendente
+        timeServiceArr = serviceSelected.split(':'),
+        hourService = parseInt(timeServiceArr[0]),
+        minuteService = parseInt(timeServiceArr[1]),
+        durationService = Duration.fromObject({ hours: hourService, minutes: minuteService}), //Duración del servicio
+        dateArr = new Array(), //Se crea el arreglo de fechas y horarios
+        blockToAdd = new Array(),
+        dateArrayJoin,
+        dateFromPicker = date; //Toma la fecha de la variable global "date" y la guardamos en una nueva variable local
     
     //Al cargar el tiempo del servicio deberá ir validando
     //Aumentando de 15 en 15 minutos 
     
-    let dateArr = new Array();
-    for(let i=0; i<scheduleArraySort.length ; i++){
-        //Hora agendada del Staff
-        let timeFromScheduled = scheduleArraySort[i],
+    //Comienza a recorrer el arreglo de horarios agendados
+    for(let i=0; i<scheduledArraySort.length ; i++){
+        let timeFromScheduled = scheduledArraySort[i], //Hora agendada del Staff
             timeArr = timeFromScheduled.split(':'), //Crea un arreglo separado por ":" de un string
             hour = parseInt(timeArr[0]), //Toma el primer elemento (horas) del arreglo, convirtiendo el agumento cadena [timeArr] en un entero. 
-            minute = parseInt(timeArr[1]), //Toma el segundo elemento (minutos) del arreglo, convirtiendo el agumento cadena [timeArr] en un entero. 
-            dateFromPicker = date; //Toma la fecha de la variable global "date" y la guardamos en una nueva variable local
-    
-        //Fecha y hora modificada de acuerdo a lo agendado. 
-        //Se va guardando en un nuevo arreglo "dateArr"
-        dateArr.push(dateFromPicker.setHours(hour,minute));
+            minute = parseInt(timeArr[1]); //Toma el segundo elemento (minutos) del arreglo, convirtiendo el agumento cadena [timeArr] en un entero. 
+            
+        //Se va guardando en un nuevo arreglo "dateArr" cada horario ocupado del estaff
+        dateArr.push(DateTimeLuxon.fromJSDate(new Date (dateFromPicker.setHours(hour,minute)))); //Juntamos la hora con la fecha y la convertimos a formato LUXON y la metemos al Arreglo DateArr
         
-        if(typeof dateArr[1] !== 'undefined'){
-            let afterTime = new Date(dateArr[i]), 
-                beforeTime = new Date(dateArr[i-1]);
+        //Valida que consideré el segundo miembro del arreglo
+        if(typeof dateArr[1] === 'undefined')continue;
+        
+        let afterTime = dateArr[i], 
+            beforeTime = dateArr[i-1];
+        
+        //Si el intervalo es mayor de 15 minutos, se debería de entrar en una validación del servicio
+        //esto debido a que se encuentra un hueco.
+        //Se compone de dos pasos: 
+        // 1) El servicio cabe dentro del hueco
+        // 2) Si cabe dentro del hueco debera de generar un bloque adicional para considerar ese espacio.
+        interval = Interval.fromDateTimes(beforeTime, afterTime);
+        
+        if(interval.length('minutes') > 15 && durationService.as('minutes') <= interval.length('minutes')){
+            console.log('intervalo mayor de 15 minutos y servicio menor o igual al hueco');
+           
+            //Agrega horas al bloque
+            //Regresa la duración del servicio
+            let afterTimeBlock = afterTime.minus({
+               hours: durationService.hours,
+               minutes: durationService.minutes
+            });
+            //Inicio del bloque
+            console.log(afterTimeBlock.toLocaleString(afterTimeBlock.DATETIME)); //2) esto es, {16:00}
+            //Fin del bloque
+            console.log(afterTime.get('hour'));
             
-            console.log(beforeTime);
-            console.log(afterTime);
-            i = Interval.fromDateTimes(beforeTime, afterTime);
-            console.log(i.length('minutes'));
+            //Se agrega el elemento al bloque temporal
+            blockToAdd.push(afterTimeBlock);
+            //Se genera el bloque de 15 en 15 hasta el afterTIme.hour
+            while (afterTimeBlock < afterTime){
+                console.log('hello');
+                //Aumento de 15 en 15
+                afterTimeBlock = afterTimeBlock.plus({
+                   minutes: 15 
+                });
+                //Se agrega elementos al array blockToAdd
+                blockToAdd.push(afterTimeBlock);                                       
+            }
+            //Elimina el último elemento del blockToAdd
+            blockToAdd.pop();
             
-            
+            //junta los dos arreglos y los ordena 
+            dateArrayJoin = dateArr.concat(blockToAdd).sort();
         }
-        
     }
     
-    now = DateTimeLuxon.now();
-    later = DateTimeLuxon.local(2021, 12, 12);
-    i = Interval.fromDateTimes(now, later);
-    
-    console.log(i.length('days'));
-    // A partir de aquí ya podría usar Luxon
-    //Construcción de los bloques agendados considerando el servicio.
-    //Cuando haya intervalos mayores a 15 minutos entre dos horarios (elementos de la matriz)
-    //Deberá entrar la validación con el tiempo de servicio
+    console.log(dateArrayJoin);
+    //return dateArrayJoin;
     
   }
 
@@ -279,8 +311,8 @@ function loadSelectedDay(e){
                             //Se genera horario por default del primer miembro del Staff
                             //Carga los horarios del primer staff por default en la lista $scheduleStaff
                             scheduleArrDefault = obj[0].ScheduleArray;
-                            scheduleArrDefault.forEach( schedule => {
-                                //console.log(schedule);
+                            let scheduledArrDefaultSort =scheduleArrDefault.sort();
+                            scheduledArrDefaultSort.forEach( schedule => {
                                 $scheduleStaff += `<option value="">${schedule}</option>`;
                             })
                         });
