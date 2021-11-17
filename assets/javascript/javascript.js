@@ -175,14 +175,64 @@ function loadLapseTime(e){
     });
 }
 
-//La función devolverá, únicamente las horas disponibles
-//Recibe el incio y fin del horario de trabajo
+//Función generadora del día Laboral con separaciones de 15 minutos
+function laborDayMaker(startLaborableDay, endLaborableDay){
+    //Validación de existencia
+        if( typeof startLaborableDay === 'undefined' ||
+            typeof endLaborableDay === 'undefined' || 
+            typeof date === 'undefined')return;
+    
+    let dateFromPicker = date,
+        timeStartLaborableDayArr = startLaborableDay.split(':'),
+        hourStartLaborableDay = parseInt(timeStartLaborableDayArr[0]),
+        minuteStartLaborableDay = parseInt(timeStartLaborableDayArr[1]),
+        timeEndLaborableDayArr = endLaborableDay.split(':'),
+        hourEndLaborableDay = parseInt(timeEndLaborableDayArr[0]),
+        minuteEndLaborableDay = parseInt(timeEndLaborableDayArr[1]),
+        startLaborDay = DateTimeLuxon.fromJSDate(new Date (dateFromPicker.setHours(hourStartLaborableDay,minuteStartLaborableDay))), 
+        endLaborDay = DateTimeLuxon.fromJSDate(new Date (dateFromPicker.setHours(hourEndLaborableDay,minuteEndLaborableDay))),
+        laborDay = new Array();
+
+    //Ahora debera ir generando todo el horario de disponibilidad 
+    //Una función While usando startService y endService y que vaya generando cadad 15 minutos 
+    //Se introduce la hora inicial dentro del arreglo
+    laborDay.push(startLaborDay);
+    
+    //console.log("El día laboral es: ");
+    //Se recorre el horario agregandolo al arreglo 
+    while (startLaborDay < endLaborDay){
+        startLaborDay = startLaborDay.plus({
+            minutes: 15 
+        });
+        //Arreglo del día laboral.
+        laborDay.push(startLaborDay);
+        
+        //console.log(startLaborDay.hour + ':' + startLaborDay.minute);
+    }
+    
+    //console.log(laborDay);
+    
+    return laborDay;
+    
+}
+
+//Funcion generadora de la disponibilidad, considera la jornada laboral y los bloques de ocupacion
+function availabilityScheduleMaker(laborDay, dateArrayJoin){
+    const availabilityScheduleFix = new Array();
+    availabilityScheduleFix.push(laborDay.filter( scheduleLD => !dateArrayJoin.map( scheduleDAJ => scheduleDAJ.toISO()).includes(scheduleLD.toISO())));
+    console.log(availabilityScheduleFix);
+        
+    return availabilityScheduleFix;
+}
+
+
+//La función devolverá, únicamente las horas disponibles considerando el tiempo de servicio señalado por el usuario
 function validateSchedule(serviceSelected, startServiceSelected, endServiceSelected, scheduledArray){
     //Validación de entradas
-    if(typeof serviceSelected !== 'undefined'&&
-            typeof startServiceSelected !== 'undefined' &&
-            typeof endServiceSelected !== 'undefined' && 
-            typeof scheduleArr !== 'undefined')return;
+    if( typeof serviceSelected === 'undefined' ||
+        typeof startServiceSelected === 'undefined' ||
+        typeof endServiceSelected === 'undefined' || 
+        typeof date === 'undefined')return;
     
     console.log(startServiceSelected);
     console.log(endServiceSelected);
@@ -242,7 +292,6 @@ function validateSchedule(serviceSelected, startServiceSelected, endServiceSelec
             blockToAdd.push(afterTimeBlock);
             //Se genera el bloque de 15 en 15 hasta el afterTIme.hour
             while (afterTimeBlock < afterTime){
-                console.log('hello');
                 //Aumento de 15 en 15
                 afterTimeBlock = afterTimeBlock.plus({
                    minutes: 15 
@@ -258,8 +307,13 @@ function validateSchedule(serviceSelected, startServiceSelected, endServiceSelec
         }
     }
     
-    console.log(dateArrayJoin);
-    //return dateArrayJoin;
+    //Función que genera todo el bloque completo del día
+    //Debe tomar del inicio de la jornada laboral hasta el final
+    let laborDay = laborDayMaker(startServiceSelected, endServiceSelected), 
+        availabilitySchedule = availabilityScheduleMaker(laborDay, dateArrayJoin);
+    
+    
+    return availabilitySchedule;
     
   }
 
@@ -294,7 +348,8 @@ function loadSelectedDay(e){
                         //console.log(json);
                         //Carga opcion default
                         let $staffName,
-                            $scheduleStaff;
+                            $scheduleStaff,
+                            scheduleArrDefault;
                         json.forEach(obj => {
                             for(const prop in obj){
                                 if (obj.hasOwnProperty(prop)) {
@@ -303,34 +358,30 @@ function loadSelectedDay(e){
                                         $staffName += `<option value="${obj[prop].id_staff}">${obj[prop].staff_name}</option>`;
                                         //console.log(obj[0].ScheduleArray);
                                         //console.log(obj[prop].id_staff);
-                                        //console.log(obj[prop].ScheduleArray);
-                                        
+                                        //console.log(obj[prop].ScheduleArray);             
                                     } 
                                 }
                             }
-                            //Se genera horario por default del primer miembro del Staff
-                            //Carga los horarios del primer staff por default en la lista $scheduleStaff
-                            scheduleArrDefault = obj[0].ScheduleArray;
-                            let scheduledArrDefaultSort =scheduleArrDefault.sort();
-                            scheduledArrDefaultSort.forEach( schedule => {
-                                $scheduleStaff += `<option value="">${schedule}</option>`;
-                            })
                         });
                         //Manda al DOM la lista del staff;
                         $selectStaff.innerHTML = $staffName;
-                        //Manda al DOM la lista de horarios
-                        //Podría crear una función que en actualize automáticamente los horarios posibles, debe mandar un horario por default
-                        //console.log($staffName);
-                        //Aquí deberá ir la función que valide el horario 
-                        //Tendría que tomar el valor del tiempo de servicio, podría ir a la función ya creada 
-                        // Falta validar existencia
+                        
+                        //Carga los horarios del 1er Staff por Default
+                        scheduleArrDefault = json[0][0].ScheduleArray;
+                        
+                        //Valida tipos de datos
                         if(typeof LT_ServiceSelected !== 'undefined' && typeof Start_ServiceSelected !== 'undefined' && typeof End_ServiceSelected !== 'undefined'){
                             //funcion que valide el horario
-                            validateSchedule(LT_ServiceSelected, Start_ServiceSelected, End_ServiceSelected, scheduleArrDefault);
+                            scheduledArrDefaultSort = validateSchedule(LT_ServiceSelected, Start_ServiceSelected, End_ServiceSelected, scheduleArrDefault);
+                            scheduledArrDefaultSort[0].forEach( schedule => {
+                                //Se obtiene el formato de 24 hrs, ie. 13:00
+                                schedule = schedule.toLocaleString(DateTimeLuxon.TIME_24_SIMPLE)
+                                $scheduleStaff += `<option value="">${schedule}</option>`;
+                            });      
                         }
-
+                        
+                        //Manda al DOM la lista de horarios
                         $selectAvailable.innerHTML = $scheduleStaff;
-                        //console.log($scheduleStaff);
                         
                         
                     })
